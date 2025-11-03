@@ -8,6 +8,16 @@ Multi-agent workflow that researches a topic, analyzes trends, writes a report, 
 - Hierarchical process with a manager agent
 - Exports final output to PDF at `multi_agent_report_generator/outputs/final_report.pdf`
 
+
+## Technologies Used
+- Python 3.11
+- CrewAI (agents, tasks, hierarchical process)
+- OpenAI API (via CrewAI `LLM`)
+- LangChain Community Tools (`BraveSearch` wrapper)
+- ReportLab (PDF generation)
+- python-dotenv (env management)
+- Pydantic (schemas/validation)
+
 ## Setup
 1) Create and activate a virtual environment:
 ```sh
