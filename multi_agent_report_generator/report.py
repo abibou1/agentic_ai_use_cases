@@ -26,6 +26,58 @@ def create_llm():
 
 llm = create_llm()
 
+# Save text content to a PDF file
+def save_report_to_pdf(text: str, file_path: str) -> str:
+    try:
+        from reportlab.lib.pagesizes import LETTER  # type: ignore[reportMissingImports]
+        from reportlab.lib.units import inch  # type: ignore[reportMissingImports]
+        from reportlab.pdfgen import canvas  # type: ignore[reportMissingImports]
+        from reportlab.pdfbase.pdfmetrics import stringWidth  # type: ignore[reportMissingImports]
+    except ImportError as e:
+        raise ImportError("reportlab is required to export PDF. Install with: pip install reportlab") from e
+
+    output_dir = os.path.dirname(file_path) or "."
+    os.makedirs(output_dir, exist_ok=True)
+
+    c = canvas.Canvas(file_path, pagesize=LETTER)
+    width, height = LETTER
+    margin = 0.75 * inch
+    usable_width = width - 2 * margin
+    line_height = 14
+    y = height - margin
+
+    c.setFont("Times-Roman", 11)
+
+    def new_page_if_needed():
+        nonlocal y
+        if y < margin:
+            c.showPage()
+            c.setFont("Times-Roman", 11)
+            y = height - margin
+
+    for paragraph in (text or "").split("\n\n"):
+        for raw_line in paragraph.split("\n"):
+            words = raw_line.split(" ") if raw_line else [""]
+            current = ""
+            for word in words:
+                candidate = (current + " " + word).strip()
+                if stringWidth(candidate, "Times-Roman", 11) <= usable_width:
+                    current = candidate
+                else:
+                    c.drawString(margin, y, current)
+                    y -= line_height
+                    new_page_if_needed()
+                    current = word
+            if current:
+                c.drawString(margin, y, current)
+                y -= line_height
+                new_page_if_needed()
+        y -= line_height  # paragraph spacing
+        new_page_if_needed()
+
+    c.save()
+    return file_path
+
 def brave_search_wrapper(query: str) -> str:
     if not isinstance(query, str) or not query.strip():
         raise ValueError("Query must be a non-empty string.")
@@ -51,9 +103,6 @@ def create_brave_search_tool():
 # Create the BraveSearch tool
 SearchTool = create_brave_search_tool()
 
-print("\n\n***** BraveSearch Tool *****\n\n")
-print(SearchTool["description"])
-
 
 # Define agents
 
@@ -71,10 +120,6 @@ web_researcher_agent = Agent(
     llm=llm,
     verbose=True
 )
-
-print("\n\n***** Web Researcher Agent *****\n\n")
-print(web_researcher_agent.role)
-print(web_researcher_agent.goal)
 
 trend_analyst_agent = Agent(
     role="Insight Synthesizer",
@@ -136,21 +181,6 @@ manager_agent = Agent(
     verbose=True
 )
 
-print("\n\n***** Manager Agent *****\n\n")
-print(manager_agent.role)
-print(manager_agent.goal)
-
-print("\n\n***** Proofreader Agent *****\n\n")
-print(proofreader_agent.role)
-print(proofreader_agent.goal)
-
-print("\n\n***** Report Writer Agent *****\n\n")
-print(report_writer_agent.role)
-print(report_writer_agent.goal)
-
-print("\n\n***** Trend Analyst Agent *****\n\n")
-print(trend_analyst_agent.role)
-print(trend_analyst_agent.goal)
 
 # Define tasks
 web_research_task = Task(
@@ -165,12 +195,60 @@ web_research_task = Task(
 print("\n\n***** Web Research Task *****\n\n")
 print(web_research_task.description)
 
-# Define tasks
-web_research_task = Task(
+trend_analysis_task = Task(
     description=(
-        "Conduct web-based research to identify 5-7 of the {topic}. Focus on key use cases. "
+        "Analyze the research findings to rank {topic}. "
     ),
     expected_output=(
-        "A structured list of 5-7 {topic}."
+        "A table ranking trends by impact, with concise descriptions of each trend."
     )
 )
+
+report_writing_task = Task(
+    description=(
+        "Draft report summarizing the findings and analysis of {topic}. Include sections for "
+        "Introduction, Trends Overview, Analysis, and Recommendations."
+    ),
+    expected_output=(
+        "A structured, professional draft with a clear flow of information. Ensure logical organization and consistent tone."
+    )
+)
+
+proofreading_task = Task(
+    description=(
+        "Refine the draft for grammatical accuracy, coherence, and formatting. Ensure the final document is polished "
+        "and ready for publication."
+    ),
+    expected_output=(
+        "A professional, polished report free of grammatical errors and inconsistencies. Format the document for "
+        "easy readability."
+    )
+)
+
+crew = Crew(
+    agents=[web_researcher_agent, trend_analyst_agent, report_writer_agent, proofreader_agent],
+    tasks=[web_research_task, trend_analysis_task, report_writing_task, proofreading_task],
+    process=Process.hierarchical,
+    manager_agent=manager_agent,
+    verbose=True
+)
+
+print("\n\n***** Crew *****\n\n")
+crew_output = crew.kickoff(inputs={"topic": "AI Trends"})
+
+# get final output
+print("\n\n***** Final Output *****\n\n")
+report_text = None
+try:
+    report_text = crew_output.raw[0].final_output
+except Exception:
+    try:
+        report_text = str(crew_output)
+    except Exception:
+        report_text = ""
+print(report_text)
+
+# save to PDF
+pdf_path = os.path.join("outputs", "final_report.pdf")
+saved = save_report_to_pdf(report_text, pdf_path)
+print(f"\nSaved PDF to: {saved}")
