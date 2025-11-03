@@ -151,3 +151,26 @@ print(report_writer_agent.goal)
 print("\n\n***** Trend Analyst Agent *****\n\n")
 print(trend_analyst_agent.role)
 print(trend_analyst_agent.goal)
+
+# Define tasks
+web_research_task = Task(
+    description=(
+        "Conduct web-based research to identify 5-7 of the {topic}. Focus on key use cases. "
+    ),
+    expected_output=(
+        "A structured list of 5-7 {topic}."
+    )
+)
+
+print("\n\n***** Web Research Task *****\n\n")
+print(web_research_task.description)
+
+# Define tasks
+web_research_task = Task(
+    description=(
+        "Conduct web-based research to identify 5-7 of the {topic}. Focus on key use cases. "
+    ),
+    expected_output=(
+        "A structured list of 5-7 {topic}."
+    )
+)
