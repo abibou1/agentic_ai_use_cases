@@ -107,6 +107,7 @@ SearchTool = create_brave_search_tool()
 # Define agents
 
 web_researcher_agent = Agent(
+    name="Web Researcher",
     role="Web Research Specialist",
     goal=(
         "To find the most recent, impactful, and relevant about {topic}. This includes identifying "
@@ -122,6 +123,7 @@ web_researcher_agent = Agent(
 )
 
 trend_analyst_agent = Agent(
+    name="Trend Analyst",
     role="Insight Synthesizer",
     goal=(
         "To analyze research findings, extract significant trends, and rank them by industry impact, growth potential, "
@@ -137,6 +139,7 @@ trend_analyst_agent = Agent(
 )
 
 report_writer_agent = Agent(
+    name="Report Writer",
     role="Narrative Architect",
     goal=(
         "To craft a detailed, professional report that communicates research findings and analysis effectively. "
@@ -152,6 +155,7 @@ report_writer_agent = Agent(
 )
 
 proofreader_agent = Agent(
+    name="Proofreader",
     role="Polisher of Excellence",
     goal=(
         "To refine the report for grammatical accuracy, readability, and formatting, ensuring it meets professional "
@@ -167,6 +171,7 @@ proofreader_agent = Agent(
 )
 
 manager_agent = Agent(
+    name="Manager",
     role="Workflow Maestro",
     goal=(
         "To coordinate agents, manage task dependencies, and ensure all outputs meet quality standards. Your focus "
@@ -178,7 +183,8 @@ manager_agent = Agent(
     ),
     tools=[],  
     llm=llm, 
-    verbose=True
+    verbose=True,
+    allow_delegation=True
 )
 
 
@@ -234,7 +240,8 @@ crew = Crew(
 )
 
 print("\n\n***** Crew *****\n\n")
-crew_output = crew.kickoff(inputs={"topic": "AI Trends"})
+# crew_output = crew.kickoff(inputs={"topic": "AI Trends"})
+crew_output = crew.kickoff(inputs={"topic": "NYC Real Estate Market"})
 
 # get final output
 print("\n\n***** Final Output *****\n\n")
@@ -248,7 +255,9 @@ except Exception:
         report_text = ""
 print(report_text)
 
-# save to PDF
-pdf_path = os.path.join("outputs", "final_report.pdf")
+# save to PDF under this project folder's outputs directory
+current_dir = os.path.dirname(__file__)
+outputs_dir = os.path.join(current_dir, "outputs")
+pdf_path = os.path.join(outputs_dir, "final_report.pdf")
 saved = save_report_to_pdf(report_text, pdf_path)
 print(f"\nSaved PDF to: {saved}")
