@@ -17,6 +17,10 @@ from services.pdf_generator import save_report_to_pdf
 
 
 from dotenv import load_dotenv
+ 
+
+from datetime import date
+as_of = date.today().isoformat()
 
 # Configure logging
 logging.basicConfig(
@@ -138,26 +142,15 @@ def brave_search_wrapper(query: str) -> str:
 
 
 def create_brave_search_tool() -> Dict[str, Any]:
-    """Create a tool dictionary for BraveSearch integration.
-    
-    Returns a dictionary containing tool metadata and function reference
-    for use with CrewAI agents.
+    """Create a simple dict-based tool CrewAI Agent can accept.
     
     Returns:
-        Dictionary with tool name, description, and function reference.
-        
-    Example:
-        >>> tool = create_brave_search_tool()
-        >>> tool['name']
-        'brave_search_tool'
-        >>> callable(tool['function'])
-        True
+        Dict[str, Any]: name, description, and callable function.
     """
     return {
-        "name": "brave_search_tool",
+        "name": "brave_search",
         "description": (
-            "Searches the web using BraveSearch and returns relevant information for a given query. "
-            "Useful for finding up-to-date and accurate information on a wide range of topics."
+            "Search the web using BraveSearch and return relevant, recent information for a given query."
         ),
         "function": brave_search_wrapper,
     }
@@ -177,8 +170,8 @@ def main() -> None:
         # Initialize LLM
         llm = create_llm()
         
-        # Create the BraveSearch tool
-        search_tool = create_brave_search_tool()
+        # (Temporarily disabled) Create the BraveSearch tool
+        # search_tool = create_brave_search_tool()
         
         # Define agents
         web_researcher_agent = Agent(
@@ -271,28 +264,24 @@ def main() -> None:
         # Define tasks
         web_research_task = Task(
             description=(
-                "Conduct web-based research to identify 5-7 key insights about {topic}. "
-                "Focus on key use cases, recent developments, and significant trends."
+                "Conduct web-based research to identify 5-7 key insights about {topic} as of {as_of}. "
+                "Use only recent and credible sources (prefer last 6–12 months). Include the source URL "
+                "for every insight. Prefer primary sources, government/official stats, and reputable media."
             ),
-            expected_output="A structured list of 5-7 key insights about {topic}."
+            expected_output="A structured list of 5-7 insights with a short summary and a URL for each."
         )
 
         trend_analysis_task = Task(
-            description="Analyze the research findings to rank trends by importance and impact.",
-            expected_output=(
-                "A table ranking trends by impact, with concise descriptions of each trend."
-            )
+            description="Analyze the findings (with citations) and rank trends by importance and impact; flag any stale sources.",
+            expected_output="A table ranking trends by impact, with concise descriptions and source URLs."
         )
 
         report_writing_task = Task(
             description=(
-                "Draft report summarizing the findings and analysis of {topic}. Include sections "
-                "for Introduction, Trends Overview, Analysis, and Recommendations."
+                "Draft a professional report on {topic} as of {as_of}. Include: Introduction, Trends Overview, "
+                "Analysis, Recommendations. Retain footnote-style citations for all referenced facts/figures."
             ),
-            expected_output=(
-                "A structured, professional draft with a clear flow of information. Ensure "
-                "logical organization and consistent tone."
-            )
+            expected_output="A structured draft with clear flow and in-text or footnote citations."
         )
 
         proofreading_task = Task(
@@ -330,7 +319,7 @@ def main() -> None:
         topic = "NYC Real Estate Market"
         logger.info(f"Processing topic: {topic}")
         
-        crew_output = crew.kickoff(inputs={"topic": topic})
+        crew_output = crew.kickoff(inputs={"topic": topic, "as_of": as_of})
 
         # Extract final output
         logger.info("Extracting final report...")
@@ -349,6 +338,11 @@ def main() -> None:
         if not report_text:
             raise RuntimeError("Failed to extract report text from crew output")
 
+        header = f"# {topic} — Report\n\n_Last updated: {as_of}_\n\n"
+        print("Header: ", header)
+
+        report_text = header + report_text
+        
         logger.info("Report text extracted successfully")
         print("\n\n***** Final Output *****\n\n")
         print(report_text)
