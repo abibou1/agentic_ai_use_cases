@@ -338,14 +338,12 @@ def main() -> None:
         if not report_text:
             raise RuntimeError("Failed to extract report text from crew output")
 
-        header = f"# {topic} — Report\n\n_Last updated: {as_of}_\n\n"
+        header = f"# {topic} — Report\n\nLast updated: {as_of}\n\n"
         print("Header: ", header)
 
         report_text = header + report_text
         
         logger.info("Report text extracted successfully")
-        print("\n\n***** Final Output *****\n\n")
-        print(report_text)
 
         # Save to PDF
         current_dir = Path(__file__).parent
