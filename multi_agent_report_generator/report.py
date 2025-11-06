@@ -60,7 +60,7 @@ def ensure_openai_api_key() -> str:
     return openai_api_key
 
 
-def create_llm() -> LLM:  # type: ignore[name-defined]
+def create_llm_gpt_4o() -> LLM:  # type: ignore[name-defined]
     """Create and configure the LLM instance.
     
     Creates an LLM instance using OpenAI's GPT-4o model with the API key
@@ -99,14 +99,12 @@ def create_llm_gpt_3_5_turbo() -> LLM:
     Returns:
         LLM: Configured LLM instance for use by agents.
     """
-    try:
-        api_key = ensure_openai_api_key()
-        llm = LLM(
-            model='openai/gpt-3.5-turbo',
-            api_key=api_key
-        )
-        logger.info("LLM instance created successfully with model: openai/gpt-3.5-turbo")
-        return llm
+    api_key = ensure_openai_api_key()
+    llm = LLM(
+        model='openai/gpt-3.5-turbo',
+        api_key=api_key
+    )
+    return llm
 
 def brave_search_wrapper(query: str) -> str:
     """Wrapper function for BraveSearch tool.
@@ -182,8 +180,8 @@ def main() -> None:
     """
     try:
         # Initialize LLM
-        # llm = create_llm()
-        llm = create_llm_gpt_3_5_turbo()
+        llm_gpt_4o = create_llm_gpt_4o()
+        llm_gpt_3_5 = create_llm_gpt_3_5_turbo()
         
         # (Temporarily disabled) Create the BraveSearch tool
         # search_tool = create_brave_search_tool()
@@ -203,7 +201,7 @@ def main() -> None:
                 "excel at identifying actionable data and trends."
             ),
             tools=[],
-            llm=llm,
+            llm=llm_gpt_3_5,
             verbose=True
         )
 
@@ -221,7 +219,7 @@ def main() -> None:
                 "actionable insights."
             ),
             tools=[],
-            llm=llm,
+            llm=llm_gpt_3_5,
             verbose=True
         )
 
@@ -238,7 +236,7 @@ def main() -> None:
                 "your work is both informative and captivating."
             ),
             tools=[],
-            llm=llm,
+            llm=llm_gpt_4o,
             verbose=True
         )
 
@@ -254,7 +252,7 @@ def main() -> None:
                 "written content. Your sharp eye for detail ensures every document is flawless."
             ),
             tools=[],
-            llm=llm,
+            llm=llm_gpt_4o,
             verbose=True
         )
 
@@ -271,7 +269,7 @@ def main() -> None:
                 "every process runs smoothly, overseeing tasks and verifying results."
             ),
             tools=[],
-            llm=llm,
+            llm=llm_gpt_3_5,
             verbose=True,
             allow_delegation=True
         )
@@ -301,12 +299,11 @@ def main() -> None:
 
         proofreading_task = Task(
             description=(
-                "Refine the draft for grammatical accuracy, coherence, and formatting. Ensure "
-                "the final document is polished and ready for publication."
+                "Edit the report draft for grammar, style, and flow. Return the full edited report text — "
+                "not a summary or placeholder. Ensure nothing from the original report is omitted."
             ),
             expected_output=(
-                "A professional, polished report free of grammatical errors and inconsistencies. "
-                "Format the document for easy readability."
+                "The complete, polished report with all sections intact and improved readability."
             )
         )
 
