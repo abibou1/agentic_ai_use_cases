@@ -89,10 +89,24 @@ def create_llm() -> LLM:  # type: ignore[name-defined]
         logger.error(f"Failed to create LLM instance: {e}")
         raise
 
-
-
-
-
+# create llm with gpt 3.5 turbo
+def create_llm_gpt_3_5_turbo() -> LLM:
+    """Create and configure the LLM instance.
+    
+    Creates an LLM instance using OpenAI's GPT-3.5 Turbo model with the API key
+    from environment variables.
+    
+    Returns:
+        LLM: Configured LLM instance for use by agents.
+    """
+    try:
+        api_key = ensure_openai_api_key()
+        llm = LLM(
+            model='openai/gpt-3.5-turbo',
+            api_key=api_key
+        )
+        logger.info("LLM instance created successfully with model: openai/gpt-3.5-turbo")
+        return llm
 
 def brave_search_wrapper(query: str) -> str:
     """Wrapper function for BraveSearch tool.
@@ -168,7 +182,8 @@ def main() -> None:
     """
     try:
         # Initialize LLM
-        llm = create_llm()
+        # llm = create_llm()
+        llm = create_llm_gpt_3_5_turbo()
         
         # (Temporarily disabled) Create the BraveSearch tool
         # search_tool = create_brave_search_tool()
